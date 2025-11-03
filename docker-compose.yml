@@ -5,11 +5,10 @@ services:
     environment:
       POSTGRES_USER: athar
       POSTGRES_PASSWORD: athar
-      PGDATA: /var/lib/postgresql/data
     volumes:
       - postgres:/var/lib/postgresql/data
     ports:
-      - 5432:5432
+      - "5432:5432"
     networks:
       - microservices-net
     restart: unless-stopped
@@ -24,7 +23,7 @@ services:
     volumes:
       - pgadmin:/var/lib/pgadmin
     ports:
-      - 5050:80
+      - "5050:80"
     networks:
       - microservices-net
     restart: unless-stopped
@@ -33,7 +32,7 @@ services:
     container_name: ms_mongo_db
     image: mongo
     ports:
-      - 27017:27017
+      - "27017:27017"
     volumes:
       - mongo:/data
     environment:
@@ -54,8 +53,8 @@ services:
   mail-dev:
     container_name: ms_mail_dev
     ports:
-      - 1080:1080
-      - 1025:1025
+      - "1080:1080"
+      - "1025:1025"
     image: maildev/maildev
 
 networks:
