@@ -1,10 +1,14 @@
 package com.athar.ecommerce.product;
 
+import com.athar.ecommerce.exception.ProductPurchaseException;
 import jakarta.persistence.EntityNotFoundException;
+import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -22,6 +26,7 @@ public class ProductService {
         return productRepository.save(product).getId();
     }
 
+    @Transactional
     public List<ProductPurchaseResponse> purchaseProduct(
             @Valid List<ProductPurchaseRequest> request) {
 
@@ -30,6 +35,35 @@ public class ProductService {
                 .toList();
 
         var storedProducts = productRepository.findAllByIdInOrderById(productIds);
+
+        if (productIds.size() != storedProducts.size()) {
+            throw new ProductPurchaseException("One or more products does not exists!");
+        }
+
+        var storedRequest = request.stream()
+                .sorted(Comparator.comparing(ProductPurchaseRequest::productId))
+                .toList();
+
+        var productPurchasedResponse = new ArrayList<ProductPurchaseResponse>();
+
+        for (int i = 0; i < storedRequest.size(); i++) {
+
+            var product = storedProducts.get(i);
+            var productRequest = storedRequest.get(i);
+            if (product.getAvailableQuantity() < productRequest.quantity()) {
+                throw new ProductPurchaseException(
+                        format("Not enough stock for product ID %d", product.getId()));
+            }
+
+            var newAvailableQuantity = product.getAvailableQuantity() - productRequest.quantity();
+            product.setAvailableQuantity(newAvailableQuantity);
+            productRepository.save(product);
+
+
+            productPurchasedResponse.add(mapper.toProductPurchaseResponse(product, productRequest.quantity()));
+        }
+
+        return productPurchasedResponse;
     }
 
     public ProductResponse findById(Integer productId) {
